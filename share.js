@@ -14,6 +14,14 @@ class wShare
 
                 /* 是否开启调试模式 */
                 this.setDebug(options.debug);
+                /*if (!options.sType) {
+                    this.setHidden();
+                } else {
+                    this.setOtherPlugin(options);
+                    this.setApiList(options);
+                    this.setOption(options);
+                    this.setShare();
+                }*/
 
                 /* 设置调用的api权限列表 */
                 this.setApiList(options);
@@ -72,8 +80,9 @@ class wShare
 
     setHidden () {
         let _this = this;
+        let ajax = new Ajax();
 
-        $.getJSON('/homepage/wxshare/getSignPackage',function(data){
+        ajax.send('get', '/homepage/wxshare/getSignPackage', function(data){
 
             wx.config({
                 debug: _this.shareConfig.debug, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
@@ -130,8 +139,11 @@ class wShare
 
     setShareApi () {
         let _this = this;
+        let ajax = new Ajax();
 
-        $.getJSON('/homepage/wxshare/getSignPackage',function(data){
+        //$.getJSON('/homepage/wxshare/getSignPackage', function(data){
+        ajax.send('get', '/homepage/wxshare/getSignPackage',function(data){
+            data = JSON.parse(data);
 
             wx.config({
                 debug: _this.shareConfig.debug, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
@@ -288,7 +300,7 @@ class Ajax  {
         this.xhr = xhr;
     }
 
-    send (method, url, async, callback, data) {
+    send (method, url, callback, data = '', async = 'async') {
         let xhr = this.xhr;
 
         xhr.onreadystatechange = () => {
@@ -301,7 +313,12 @@ class Ajax  {
 
         xhr.open(method, url, async);
         xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-        xhr.send(data);
+        if (data === '') {
+            xhr.send();
+        } else {
+            xhr.send(data);
+        }
+
     }
 }
 
@@ -315,3 +332,6 @@ let config = {
         sImage: 'http://atools.goosdk.com/static/demo/jinmao1013/images/animal.png'
     }
 };
+
+let obj = new wShare(config);
+obj.previewImage('.tu', 'click', true);
