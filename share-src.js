@@ -6,14 +6,20 @@ class wShare
         try {
             if (typeof options !== 'object') {
                 console.log('配置项错误！');
+            } else if (options.apiConfig === undefined) {
+                //检测是否含有API接口配置
+                console.log('API接口配置错误！');
             } else {
-                this.shareConfig = {};
+
                 this.ua = window.navigator.userAgent;
 
                 this.wechatVersion = this.getWechatVersion();
 
                 /* 是否开启调试模式 */
                 this.setDebug(options.debug);
+                /* 配置API项 */
+                this.setApi(options.apiConfig);
+
                 /*if (!options.sType) {
                     this.setHidden();
                 } else {
@@ -44,32 +50,45 @@ class wShare
     }
 
     setDebug (debug) {
-        this.shareConfig.debug = (typeof debug !== "undefined") && debug;
+        this.debug = (typeof debug !== "undefined") && debug;
+    }
+
+    setApi (apiConfig) {
+        this.apiConfig = {};
+
+        this.apiConfig.version = apiConfig.version === undefined ? '' : apiConfig.version;
+        this.apiConfig.url = apiConfig.url === undefined ? '' : apiConfig.url;
+
+        if (this.apiConfig.url === '') {
+            console.log('请求配置地址不能为空！');
+        }
     }
 
     setApiList (options) {
-        this.shareConfig.apiList = [];
+        this.apiList = [];
 
         if (options.sType) {
-            /*if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2) {
-                this.shareConfig.apiList.push('updateAppMessageShareData','updateTimelineShareData');
+            if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2) {
+                this.apiList.push('updateAppMessageShareData','updateTimelineShareData');
             } else {
-                this.shareConfig.apiList.push('onMenuShareTimeline','onMenuShareAppMessage');
-            }*/
+                this.apiList.push('onMenuShareTimeline','onMenuShareAppMessage');
+            }
             //待bug解决之后启用新接口
-            this.shareConfig.apiList.push('onMenuShareTimeline','onMenuShareAppMessage');
+            //this.shareConfig.apiList.push('onMenuShareTimeline','onMenuShareAppMessage');
         } else {
-            this.shareConfig.apiList.push('hideMenuItems');
+            this.apiList.push('hideMenuItems');
         }
     }
 
     setOtherPlugin (plugins) {
         if (plugins.previewImage) {
-            this.shareConfig.apiList.push('previewImage');
+            this.apiList.push('previewImage');
         }
     }
 
     setShareConfig (config) {
+        this.shareConfig = {};
+
         this.shareConfig.sTitle = config.sTitle !== undefined ? config.sTitle : document.title;
         this.shareConfig.sDesctiption = config.sDesctiption !== undefined ? config.sDesctiption : document.title;
         this.shareConfig.sLink = config.sLink !== undefined ? config.sLink : location.href;
@@ -82,7 +101,10 @@ class wShare
         let _this = this;
         let ajax = new Ajax();
 
-        ajax.send('get', '/homepage/wxshare/getSignPackage', function(data){
+        let _apiUrl = this.apiConfig.url;
+        if (this.apiConfig.version !== '') _apiUrl += '?version=' + this.apiConfig.version;
+
+        ajax.send('get', _apiUrl, function(data){
 
             wx.config({
                 debug: _this.shareConfig.debug, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
@@ -146,12 +168,12 @@ class wShare
             data = JSON.parse(data);
 
             wx.config({
-                debug: _this.shareConfig.debug, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
+                debug: _this.debug, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
                 appId: data.appId, // 必填，公众号的唯一标识
                 timestamp: data.timestamp, // 必填，生成签名的时间戳
                 nonceStr: data.nonceStr, // 必填，生成签名的随机串
                 signature: data.signature,// 必填，签名，见附录1
-                jsApiList: _this.shareConfig.apiList // 必填，需要使用的JS接口列表，所有JS接口列表见附录2
+                jsApiList: _this.apiList // 必填，需要使用的JS接口列表，所有JS接口列表见附录2
             });
 
             wx.error(function(e){
@@ -168,10 +190,10 @@ class wShare
     setShareOptions () {
 
         //待bug解决之后启用新接口
-        //if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2) {
-        if (false) {
+        if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2) {
+            //if (false) {
             //自定义“分享给朋友”及“分享到QQ”按钮的分享内容（1.4.0）
-            /*wx.updateAppMessageShareData({
+            wx.updateAppMessageShareData({
                 title: this.shareConfig.sTitle,
                 desc: this.shareConfig.sDesctiption,
                 link: this.shareConfig.sLink,
@@ -189,7 +211,7 @@ class wShare
                 success: function () {
                     // 设置成功
                 }
-            });*/
+            });
         } else {
             //朋友圈
             wx.onMenuShareTimeline({
@@ -321,3 +343,21 @@ class Ajax  {
 
     }
 }
+
+let config = {
+    sType: true,
+    debug: true,
+    apiConfig: {
+        version: 'k11',
+        url: '/homepage/wxshare/getSignPackage'
+    },
+    shareConfig: {
+        sTitle: '测试分享标题',
+        sDesctiption: '这里是分享的简介',
+        sLink: 'http://atools.goosdk.com/demo/k11/debug',
+        sImage: 'http://atools.goosdk.com/static/demo/jinmao1013/images/animal.png'
+    }
+};
+
+let obj = new wShare(config);
+obj.previewImage('.tu', 'click', true);
