@@ -14,6 +14,7 @@ class wShare
                 this.ua = window.navigator.userAgent;
 
                 this.wechatVersion = this.getWechatVersion();
+                this.wechatClient = this.getWechatClient();
 
                 /* 是否开启调试模式 */
                 this.setDebug(options.debug);
@@ -68,7 +69,8 @@ class wShare
         this.apiList = [];
 
         if (options.sType) {
-            if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2) {
+            /*this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2*/
+            if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2 && this.wechatClient !== 'android') {
                 this.apiList.push('updateAppMessageShareData','updateTimelineShareData');
             } else {
                 this.apiList.push('onMenuShareTimeline','onMenuShareAppMessage');
@@ -190,7 +192,8 @@ class wShare
     setShareOptions () {
 
         //待bug解决之后启用新接口
-        if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2) {
+        /*this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2*/
+        if (this.wechatVersion[1] >=7 && this.wechatVersion[2] >= 2 && this.wechatClient !== 'android') {
             //if (false) {
             //自定义“分享给朋友”及“分享到QQ”按钮的分享内容（1.4.0）
             wx.updateAppMessageShareData({
@@ -314,6 +317,17 @@ class wShare
         return _version;
     }
 
+    getWechatClient () {
+        let ua = this.ua.toLowerCase();
+
+        if (ua.indexOf('android')) {
+            return 'android';
+        } else if (ua.indexOf('iphone')) {
+            return 'ios';
+        } else {
+            return null
+        }
+    }
 }
 
 class Ajax  {
@@ -343,3 +357,21 @@ class Ajax  {
 
     }
 }
+
+let config = {
+    sType: true,
+    debug: false,
+    apiConfig: {
+        version: 'k11',
+        url: '/homepage/wxshare/getSignPackage'
+    },
+    shareConfig: {
+        sTitle: '测试分享标题',
+        sDesctiption: '这里是分享的简介',
+        sLink: 'http://atools.goosdk.com/demo/k11/debug',
+        sImage: 'http://atools.goosdk.com/static/demo/jinmao1013/images/animal.png'
+    }
+};
+
+let obj = new wShare(config);
+obj.previewImage('.tu', 'click', true);
